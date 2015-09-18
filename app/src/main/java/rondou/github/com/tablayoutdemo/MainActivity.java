@@ -14,10 +14,13 @@ import android.view.MenuItem;
 
 import com.ogaclejapan.smarttablayout.SmartTabLayout;
 
+import java.util.ArrayList;
+import java.util.List;
+
 
 public class MainActivity extends AppCompatActivity {
 
-    PagerAdapter pagerAdapter;
+    SimpleFragmentPagerAdapter pagerAdapter;
     ViewPager pager;
 
     @Override
@@ -27,7 +30,15 @@ public class MainActivity extends AppCompatActivity {
         SmartTabLayout tab = (SmartTabLayout) findViewById(R.id.tab);
         ViewPager pager = (ViewPager) findViewById(R.id.pager);
 
-        pagerAdapter = new SampleFragmentPagerAdapter(getSupportFragmentManager(), getApplicationContext());
+        pagerAdapter = new SimpleFragmentPagerAdapter(getSupportFragmentManager());
+        pagerAdapter.pages().add(new FragmentPage().title("yo").fragment(new Func0<Fragment>() {
+            @Override public Fragment call() {
+                return PageFragment.newInstance(0);
+            }
+        }));
+        pagerAdapter.pages().add(new FragmentPage().title("yo2").fragment(() -> PageFragment.newInstance(1)));
+        pagerAdapter.pages().add(new FragmentPage().title("yo3").fragment(() -> PageFragment.newInstance(2)));
+
         pager.setAdapter(pagerAdapter);
         tab.setViewPager(pager);
     }
@@ -54,30 +65,60 @@ public class MainActivity extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
-    public class SampleFragmentPagerAdapter extends FragmentPagerAdapter {
-        final int PAGE_COUNT = 3;
-        private String tabTitles[] = new String[] { "Tab1", "Tab2", "Tab3" };
-        private Context context;
+    public class SimpleFragmentPagerAdapter extends FragmentPagerAdapter {
 
-        public SampleFragmentPagerAdapter(FragmentManager fm, Context context) {
+        public SimpleFragmentPagerAdapter(FragmentManager fm) {
             super(fm);
-            this.context = context;
         }
 
         @Override
         public int getCount() {
-            return PAGE_COUNT;
+            return pages.size();
         }
 
         @Override
         public Fragment getItem(int position) {
-            return PageFragment.newInstance(position + 1);
+            return pages.get(position).fragment();
+        }
+
+        private List<FragmentPage> pages = new ArrayList<>();
+
+        public List<FragmentPage> pages() { return pages; }
+
+        public void add(FragmentPage page) {
+            pages.add(page);
         }
 
         @Override
         public CharSequence getPageTitle(int position) {
-            // Generate title based on item position
-            return tabTitles[position];
+            return pages.get(position).title();
+        }
+    }
+
+    public interface Func0<T> {
+        public T call();
+    }
+
+    public class FragmentPage {
+        Func0<Fragment> fragmentFunc;
+        CharSequence title;
+
+        public FragmentPage fragment(Func0<Fragment> func0) {
+            fragmentFunc = func0;
+            return this;
+        }
+
+        public FragmentPage title(CharSequence title) {
+            this.title = title;
+            return this;
+        }
+
+        public Fragment fragment() {
+            return fragmentFunc.call();
+        }
+
+        public CharSequence title() {
+            return title;
         }
     }
 
